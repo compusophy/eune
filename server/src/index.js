@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { WebSocketServer } from 'ws';
 import { Pool } from 'pg';
-import { verifyJwt } from '@farcaster/quick-auth';
+import quickAuth from '@farcaster/quick-auth';
 import http from 'http';
 
 const server = http.createServer();
@@ -35,16 +35,16 @@ const createTable = async () => {
 createTable().catch(console.error);
 
 wss.on('connection', ws => {
-    ws.on('message', async message => {
-        try {
-            const data = JSON.parse(message);
+    ws.on('message', async (messageBuffer) => {
+        const message = JSON.parse(messageBuffer.toString());
 
-            if (data.type === 'auth') {
-                const payload = await authClient.verifyJwt({ 
-                    token: data.token,
-                    domain: process.env.APP_DOMAIN,
+        if (message.type === 'auth' && message.token) {
+            try {
+                const { fid } = await quickAuth.verifyJwt(message.token, {
+                    domain: process.env.APP_DOMAIN
                 });
-                const { sub: fid } = payload;
+                
+                console.log(`Authenticated user with FID: ${fid}`);
                 
                 ws.id = fid;
                 
@@ -70,30 +70,30 @@ wss.on('connection', ws => {
                 });
 
                 console.log(`Player ${fid} authenticated and connected.`);
+            } catch (error) {
+                console.error('Failed to process message or authenticate', error);
+                ws.close();
             }
+        }
 
-            if (data.type === 'position') {
-                const player = players.get(ws.id);
-                if (player) {
-                    player.position = data.position;
-                    
-                    const query = {
-                        text: 'UPDATE players SET x = $1, y = $2, z = $3 WHERE id = $4',
-                        values: [player.position.x, player.position.y, player.position.z, ws.id],
-                    };
+        if (message.type === 'position') {
+            const player = players.get(ws.id);
+            if (player) {
+                player.position = message.position;
+                
+                const query = {
+                    text: 'UPDATE players SET x = $1, y = $2, z = $3 WHERE id = $4',
+                    values: [player.position.x, player.position.y, player.position.z, ws.id],
+                };
 
-                    pool.query(query).catch(console.error);
+                pool.query(query).catch(console.error);
 
-                    wss.clients.forEach(client => {
-                        if (client !== ws && client.readyState === WebSocket.OPEN && client.id) {
-                            client.send(JSON.stringify({ type: 'position', id: ws.id, position: data.position }));
-                        }
-                    });
-                }
+                wss.clients.forEach(client => {
+                    if (client !== ws && client.readyState === WebSocket.OPEN && client.id) {
+                        client.send(JSON.stringify({ type: 'position', id: ws.id, position: message.position }));
+                    }
+                });
             }
-        } catch (error) {
-            console.error('Failed to process message or authenticate', error);
-            ws.close();
         }
     });
 
