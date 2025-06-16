@@ -1,27 +1,19 @@
 import 'dotenv/config';
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 import { Pool } from 'pg';
-import { createClient } from '@farcaster/quick-auth';
+import { verifyJwt } from '@farcaster/quick-auth';
 import http from 'http';
-import express from 'express';
 
-const app = express();
-const port = process.env.PORT || 8080;
-
-// Create HTTP server
-const server = http.createServer(app);
-
-// Create WebSocket server
-const wss = new WebSocket.Server({ server });
+const server = http.createServer();
+const wss = new WebSocketServer({ server });
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
 });
 
-const authClient = createClient();
+// Keep track of all connected clients and their data
+const players = new Map();
+const playerConnections = new Map();
 
 const createTable = async () => {
     const client = await pool.connect();
@@ -41,9 +33,6 @@ const createTable = async () => {
 };
 
 createTable().catch(console.error);
-
-// Keep track of all connected clients and their data
-const players = new Map();
 
 wss.on('connection', ws => {
     ws.on('message', async message => {
