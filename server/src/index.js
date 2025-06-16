@@ -3,15 +3,17 @@ import { WebSocketServer } from 'ws';
 import { Pool } from 'pg';
 import * as quickAuth from '@farcaster/quick-auth';
 import http from 'http';
+import express from 'express';
 
-const server = http.createServer();
+const app = express();
+const port = process.env.PORT || 8080;
+const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
-// Keep track of all connected clients and their data
 const players = new Map();
 const playerConnections = new Map();
 
@@ -19,14 +21,14 @@ const createTable = async () => {
     const client = await pool.connect();
     try {
         await client.query(`
-            CREATE TABLE IF NOT EXISTS players (
-                id BIGINT PRIMARY KEY,
-                x FLOAT NOT NULL,
-                y FLOAT NOT NULL,
-                z FLOAT NOT NULL
-            );
-        `);
-        console.log('Table "players" is ready');
+      CREATE TABLE IF NOT EXISTS players (
+        id BIGINT PRIMARY KEY,
+        position_x REAL NOT NULL,
+        position_y REAL NOT NULL,
+        position_z REAL NOT NULL
+      );
+    `);
+        console.log('Table "players" is ready.');
     } finally {
         client.release();
     }
@@ -35,6 +37,8 @@ const createTable = async () => {
 createTable().catch(console.error);
 
 wss.on('connection', ws => {
+    console.log('Client connected');
+
     ws.on('message', async (messageBuffer) => {
         const message = JSON.parse(messageBuffer.toString());
 
@@ -47,25 +51,32 @@ wss.on('connection', ws => {
                 console.log(`Authenticated user with FID: ${fid}`);
                 
                 ws.id = fid;
-                
-                let position = { x: 0, y: 0.5, z: 0 };
-                const res = await pool.query('SELECT * FROM players WHERE id = $1', [fid]);
-                if (res.rows.length > 0) {
-                    position = { x: res.rows[0].x, y: res.rows[0].y, z: res.rows[0].z };
-                } else {
-                    await pool.query('INSERT INTO players (id, x, y, z) VALUES ($1, $2, $3, $4)', [fid, position.x, position.y, position.z]);
+                playerConnections.set(fid, ws);
+
+                const client = await pool.connect();
+                try {
+                    const res = await client.query('SELECT * FROM players WHERE id = $1', [fid]);
+                    let player;
+                    if (res.rows.length > 0) {
+                        player = {
+                            id: res.rows[0].id,
+                            position: { x: res.rows[0].position_x, y: res.rows[0].position_y, z: res.rows[0].position_z }
+                        };
+                    } else {
+                        player = { id: fid, position: { x: 0, y: 0.5, z: 0 } };
+                        await client.query('INSERT INTO players (id, position_x, position_y, position_z) VALUES ($1, $2, $3, $4)', [fid, player.position.x, player.position.y, player.position.z]);
+                    }
+                    players.set(fid, player);
+                } finally {
+                    client.release();
                 }
-                
-                const player = { id: fid, position };
-                players.set(fid, player);
-                
+
                 ws.send(JSON.stringify({ type: 'assignId', id: fid }));
                 ws.send(JSON.stringify({ type: 'currentPlayers', players: Array.from(players.values()) }));
-
-                const newPlayerMsg = JSON.stringify({ type: 'playerConnected', player });
+                
                 wss.clients.forEach(client => {
-                    if (client !== ws && client.readyState === WebSocket.OPEN) {
-                        client.send(newPlayerMsg);
+                    if (client !== ws && client.readyState === ws.OPEN && client.id) {
+                        client.send(JSON.stringify({ type: 'playerConnected', player: players.get(fid) }));
                     }
                 });
 
@@ -82,14 +93,13 @@ wss.on('connection', ws => {
                 player.position = message.position;
                 
                 const query = {
-                    text: 'UPDATE players SET x = $1, y = $2, z = $3 WHERE id = $4',
+                    text: 'UPDATE players SET position_x = $1, position_y = $2, position_z = $3 WHERE id = $4',
                     values: [player.position.x, player.position.y, player.position.z, ws.id],
                 };
-
                 pool.query(query).catch(console.error);
-
+                
                 wss.clients.forEach(client => {
-                    if (client !== ws && client.readyState === WebSocket.OPEN && client.id) {
+                    if (client !== ws && client.readyState === ws.OPEN && client.id) {
                         client.send(JSON.stringify({ type: 'position', id: ws.id, position: message.position }));
                     }
                 });
@@ -98,38 +108,25 @@ wss.on('connection', ws => {
     });
 
     ws.on('close', () => {
-        const disconnectedPlayer = players.get(ws.id);
-        if (disconnectedPlayer) {
-            
-            const query = {
-                text: 'UPDATE players SET x = $1, y = $2, z = $3 WHERE id = $4',
-                values: [disconnectedPlayer.position.x, disconnectedPlayer.position.y, disconnectedPlayer.position.z, ws.id],
-            };
-            pool.query(query).catch(e => console.error('Failed to save player on disconnect', e));
-
+        console.log('Client disconnected');
+        if (ws.id) {
             players.delete(ws.id);
+            playerConnections.delete(ws.id);
             wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
+                if (client.readyState === ws.OPEN && client.id) {
                     client.send(JSON.stringify({ type: 'playerDisconnected', id: ws.id }));
                 }
             });
-            console.log(`Player ${ws.id} disconnected.`);
         }
+    });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
     });
 });
 
-// Broadcast function to send message to all connected clients
-function broadcast(message) {
-    players.forEach((playerData, client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
-}
-
-// Basic health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', connections: wss.clients.size });
+    res.status(200).send('OK');
 });
 
 server.listen(port, () => {
