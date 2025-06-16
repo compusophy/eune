@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { WebSocketServer } from 'ws';
 import { Pool } from 'pg';
-import quickAuth from '@farcaster/quick-auth';
+import * as quickAuth from '@farcaster/quick-auth';
 import http from 'http';
 
 const server = http.createServer();
