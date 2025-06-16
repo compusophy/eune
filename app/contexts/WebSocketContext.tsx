@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { sdk } from '@farcaster/frame-sdk';
 
 interface Position {
     x: number;
@@ -38,13 +39,19 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [clientId, setClientId] = useState<string | null>(null);
 
     useEffect(() => {
-        // Use environment variable or fallback for WebSocket URL
         const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080';
         const ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => {
+        ws.onopen = async () => {
             console.log('Connected to WebSocket');
             setConnected(true);
+            try {
+                const { token } = await sdk.quickAuth.getToken();
+                ws.send(JSON.stringify({ type: 'auth', token }));
+            } catch (error) {
+                console.error('Quick Auth failed', error);
+                ws.close();
+            }
         };
 
         ws.onclose = () => {

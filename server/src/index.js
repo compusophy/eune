@@ -51,7 +51,10 @@ wss.on('connection', ws => {
             const data = JSON.parse(message);
 
             if (data.type === 'auth') {
-                const payload = await authClient.verifyJwt({ token: data.token });
+                const payload = await authClient.verifyJwt({ 
+                    token: data.token,
+                    domain: process.env.APP_DOMAIN,
+                });
                 const { sub: fid } = payload;
                 
                 ws.id = fid;
