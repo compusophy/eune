@@ -27,6 +27,11 @@ export const GameScene = () => {
     const localMovementRef = useRef(false);
     const [isSceneReady, setSceneReady] = useState(false);
     
+    // Announce ready on component mount
+    useEffect(() => {
+        sdk.actions.ready();
+    }, []);
+
     // Update player positions
     useEffect(() => {
         if (!isSceneReady || !clientId) return;
@@ -149,7 +154,6 @@ export const GameScene = () => {
             scene.add(new THREE.AmbientLight(0x404040));
 
             setSceneReady(true);
-            sdk.actions.ready();
 
             const clock = new THREE.Clock();
             let targetPos: ThreeType.Vector3 | null = null;
