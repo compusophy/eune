@@ -1,0 +1,17 @@
+{
+    "accountAssociation": {
+    "header": "eyJmaWQiOjM1MDkxMSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDJGREVmM0Y0NzBlQ2QyQmM5YTk3NzU2OEM0M0FEMzg2MGMxNjExRDgifQ",
+    "payload": "eyJkb21haW4iOiJkZXBlbmRhYmxlLW1pcmFjbGUtcHJvZHVjdGlvbi51cC5yYWlsd2F5LmFwcCJ9",
+    "signature": "MHg4MzAzZmU0MWIxMmZhNzI4MzVjYzI5MmM2MmM1ZTBkYTI0MDRmNzA5NTk2ZDNlNDVjOGVlYTZkYmIyZjVlYjM0MDA3MWM2NjE5NDVjZDllY2EwOTNjNGE3Nzc5ZDY4Y2FhMDk0MmVjYjg1NzVmZWYxMzg5NDUzMTZkYjI5ZWEzOTFi"
+  },
+    "frame": {
+      "version": "1",
+      "name": "ThreeJS MMO",
+      "iconUrl": "https://dependable-miracle-production.up.railway.app/logo.png",
+      "homeUrl": "https://dependable-miracle-production.up.railway.app/",
+      "imageUrl": "https://dependable-miracle-production.up.railway.app/og-image.png",
+      "buttonTitle": "🚩 Start",
+      "splashImageUrl": "https://dependable-miracle-production.up.railway.app/splash.png",
+      "splashBackgroundColor": "#f5f0ec"
+    }
+}

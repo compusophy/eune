@@ -1,0 +1,18 @@
+{
+  "name": "medieval-mmo-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for Medieval MMO",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "threejs-mmo": "file:..",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

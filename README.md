@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Medieval MMO
+
+A medieval MMO game built with Next.js, Three.js, and WebSockets.
+
+## Project Structure
+
+The project is split into two main parts:
+- `client/` - Next.js frontend application with Three.js for 3D rendering
+- `server/` - WebSocket server for real-time communication
 
 ## Getting Started
+
+### Client Setup
 
 First, run the development server:
 
 ```bash
+# In the client directory
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Server Setup
+
+```bash
+# In the server directory
+npm install
+npm run dev
+```
+
+The WebSocket server will start on port 8080 by default.
+
+## Deployment
+
+The project is deployed using Railway:
+- Frontend: Next.js application
+- Backend: WebSocket server
+
+## Development
+
+You can test the real-time functionality by opening multiple browser windows or connecting from different devices. The connection status and number of connected players will be displayed in real-time.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
